@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Smart_Home_Window</string>
+    <string name="blinds_text">Blinds</string>
+    <string name="window_text">Window</string>
+    <string name="automatic_button_text">Automatic</string>
+    <string name="manual_button_text">Manual</string>
+    <string name="smart_button_text">Smart</string>
+    <string name="close_text">Close</string>
+    <string name="open_text">Open</string>
+</resources>
