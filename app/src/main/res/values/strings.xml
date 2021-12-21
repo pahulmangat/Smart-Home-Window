@@ -7,4 +7,7 @@
     <string name="smart_button_text">Smart</string>
     <string name="close_text">Close</string>
     <string name="open_text">Open</string>
+    <string name="desired_temp_set_text">Set Desired Temperature</string>
+    <string name="enter_temp">Enter Temp (15-30°C)</string>
+    <string name="celsius">°C</string>
 </resources>

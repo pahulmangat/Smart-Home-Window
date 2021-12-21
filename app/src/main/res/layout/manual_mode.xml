@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".ManualMode">
 
     <TextView
         android:id="@+id/window_open"
@@ -92,31 +92,31 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/automatic_button"
+        android:id="@+id/automatic_button_M"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:text="@string/automatic_button_text"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/smart_button"
+        app:layout_constraintEnd_toStartOf="@+id/smart_button_M"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bottom_divider"
         app:layout_constraintVertical_bias="0.518"
         tools:ignore="DuplicateClickableBoundsCheck" />
 
     <Button
-        android:id="@+id/smart_button"
+        android:id="@+id/smart_button_M"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:backgroundTint="@color/purple_500"
         android:text="@string/smart_button_text"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/manual_button"
-        app:layout_constraintStart_toEndOf="@+id/automatic_button"
+        app:layout_constraintEnd_toStartOf="@+id/manual_button_M"
+        app:layout_constraintStart_toEndOf="@+id/automatic_button_M"
         app:layout_constraintTop_toBottomOf="@+id/bottom_divider" />
 
     <Button
-        android:id="@+id/manual_button"
+        android:id="@+id/manual_button_M"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="10dp"
@@ -124,7 +124,7 @@
         android:text="@string/manual_button_text"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/smart_button"
+        app:layout_constraintStart_toEndOf="@+id/smart_button_M"
         app:layout_constraintTop_toBottomOf="@+id/bottom_divider"
         app:layout_constraintVertical_bias="0.518" />
 
@@ -157,7 +157,7 @@
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="50dp"
         android:max="10"
-        android:progress="6"
+        android:progress="0"
         app:layout_constraintBottom_toTopOf="@+id/middle_divider"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -171,7 +171,7 @@
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="50dp"
         android:max="10"
-        android:progress="3"
+        android:progress="0"
         app:layout_constraintBottom_toTopOf="@+id/bottom_divider"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
