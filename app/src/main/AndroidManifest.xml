@@ -10,7 +10,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Smart_Home_Window">
         <activity
-            android:name=".MainActivity"
+            android:name=".AutomaticMode"
+            android:exported="false" />
+        <activity
+            android:name=".SmartMode"
+            android:exported="false" />
+        <activity
+            android:name=".ManualMode"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
