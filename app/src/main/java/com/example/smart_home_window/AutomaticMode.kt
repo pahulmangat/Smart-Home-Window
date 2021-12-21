@@ -14,13 +14,14 @@ class AutomaticMode : AppCompatActivity() {
         val smartButton = findViewById<Button>(R.id.smart_button_A)
 
         manualButton.setOnClickListener{
-            val intent = Intent(this, ManualMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, ManualMode::class.java).also {
+                startActivity(it)
+            }
         }
         smartButton.setOnClickListener{
-            val intent = Intent(this, SmartMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, SmartMode::class.java).also {
+                startActivity(it)
+            }
         }
-
     }
 }

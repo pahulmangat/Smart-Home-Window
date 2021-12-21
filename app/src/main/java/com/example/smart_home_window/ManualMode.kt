@@ -34,12 +34,14 @@ class ManualMode : AppCompatActivity()
         val automaticButton = findViewById<Button>(R.id.automatic_button_M)
 
         smartButton.setOnClickListener{
-            val intent = Intent(this, SmartMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, SmartMode::class.java).also {
+                startActivity(it)
+            }
         }
         automaticButton.setOnClickListener{
-            val intent = Intent(this, AutomaticMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, AutomaticMode::class.java).also {
+                startActivity(it)
+            }
         }
 
         val blindsSeekBar = findViewById<SeekBar>(R.id.blinds_seekbar)

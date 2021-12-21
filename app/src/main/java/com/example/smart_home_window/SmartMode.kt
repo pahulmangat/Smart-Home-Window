@@ -26,12 +26,14 @@ class SmartMode : AppCompatActivity()
 
         // Mode Switching
         manualButton.setOnClickListener {
-            val intent = Intent(this, ManualMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, ManualMode::class.java).also{
+                startActivity(it)
+            }
         }
         automaticButton.setOnClickListener {
-            val intent = Intent(this, AutomaticMode::class.java)
-            startActivity(intent)
+            val intent = Intent(this, AutomaticMode::class.java).also{
+                startActivity(it)
+            }
         }
 
         // Temperature Selection
