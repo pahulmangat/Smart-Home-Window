@@ -2,12 +2,12 @@ import time
 import sys
 import os
 
-libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
+libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'Capstone')
 if os.path.exists(libdir):
     sys.path.append(libdir)
 
 import logging
-from waveshare_TSL2591 import TSL2591
+import TSL2591
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,4 +29,3 @@ except KeyboardInterrupt:
     logging.info("ctrl + c:")
     sensor.Disable()
     exit()
-
