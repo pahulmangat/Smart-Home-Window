@@ -28,6 +28,7 @@ def Open_Blinders(): #open blinds function
 def Close_Blinders(): #close blinds function
     global blinderStatus
     if blinderStatus == "Open":
+        print("Closing Blinds...")
         #motor code
         time.sleep(10)
         blinderStatus = "Closed"
@@ -38,6 +39,7 @@ def Close_Blinders(): #close blinds function
 def Open_Window(): #open windows function
     global windowStatus
     if windowStatus == "Closed":
+        print("Opening Blinds...")
         #motor code
         time.sleep(10)
         windowStatus = "Open"
