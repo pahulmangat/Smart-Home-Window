@@ -21,7 +21,7 @@ dhtDevice = adafruit_dht.DHT22(board.D5,use_pulseio=False)
 while True:
     try:
         #print light sensor readings
-        lux = sensor.Lux
+        lux = lightSensor.Lux
         print('Lux: %d'%lux)
         lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
         infrared = lightSensor.Read_Infrared
