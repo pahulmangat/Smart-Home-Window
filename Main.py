@@ -6,6 +6,17 @@ import os
 import board
 import adafruit_dht
 
+# initialize light sensor
+libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'Capstone')
+if os.path.exists(libdir):
+    sys.path.append(libdir)
+import logging
+import TSL2591
+logging.basicConfig(level=logging.INFO)
+lightSensor = TSL2591.TSL2591()
+# Initial the dht device, with data pin connected to:
+dhtDevice = adafruit_dht.DHT22(board.D4,use_pulseio=False)
+
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
 
@@ -98,8 +109,10 @@ def main(mode): #main loop
         noOneHome = False
         sunlight = False
         desiredRoomTemp = 23
-        currentRoomTemp = 21
+        currentRoomTemp = dhtDevice.temperature
         outsideTemp = 23
+        print("desired room temp is: ", desiredRoomTemp)
+        print("current room temp is: ", currentRoomTemp)
         
         if currentRoomTemp > desiredRoomTemp:
             print("room is hotter")
@@ -129,4 +142,5 @@ def main(mode): #main loop
 if __name__ == "__main__":
     #Mode = input("Mode: ")
     Mode = "Smart" #device mode flag
-    main(Mode)
+    while True:
+        main(Mode)
