@@ -10,8 +10,8 @@ import adafruit_dht
 import TSL2591
 lightSensor = TSL2591.TSL2591()
 # Initial the dht device, with data pin connected to:
-tempSensorRoom = adafruit_dht.DHT22(board.D4,use_pulseio=False)
-tempSensorOutside = adafruit_dht.DHT22(board.D5,use_pulseio=False)
+tempSensorIn = adafruit_dht.DHT22(board.D4,use_pulseio=False)
+tempSensorOut = adafruit_dht.DHT22(board.D5,use_pulseio=False)
 
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
@@ -118,8 +118,9 @@ def main(mode): #main loop
             lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
         
         desiredRoomTemp = 23
-        currentRoomTemp = tempSensorRoom.temperature # get temp reading from inside temp sensor
-        outsideTemp = 23 # get temp reading from inside temp sensor
+        currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
+        #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
+        outsideTemp = 23
         print("desired room temp is: ", desiredRoomTemp)
         print("current room temp is: ", currentRoomTemp)
         
