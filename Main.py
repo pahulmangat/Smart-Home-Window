@@ -105,10 +105,21 @@ def main(mode): #main loop
         print("Smart")
         badWeather = True
         noOneHome = False
-        sunlight = False
+        #get light sensor readings
+        if lightSensor.Lux > 100:
+            sunlight = True
+            print('Lux: %d'%lightSensor.Lux)
+            print("day")
+            lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
+        else:
+            sunlight = False
+            print('Lux: %d'%lightSensor.Lux)
+            print("night")
+            lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
+        
         desiredRoomTemp = 23
-        currentRoomTemp = tempSensorRoom.temperature
-        outsideTemp = 23
+        currentRoomTemp = tempSensorRoom.temperature # get temp reading from inside temp sensor
+        outsideTemp = 23 # get temp reading from inside temp sensor
         print("desired room temp is: ", desiredRoomTemp)
         print("current room temp is: ", currentRoomTemp)
         
