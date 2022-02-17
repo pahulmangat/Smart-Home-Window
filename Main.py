@@ -10,7 +10,8 @@ import adafruit_dht
 import TSL2591
 lightSensor = TSL2591.TSL2591()
 # Initial the dht device, with data pin connected to:
-dhtDevice = adafruit_dht.DHT22(board.D4,use_pulseio=False)
+tempSensorRoom = adafruit_dht.DHT22(board.D4,use_pulseio=False)
+tempSensorOutside = adafruit_dht.DHT22(board.D5,use_pulseio=False)
 
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
@@ -106,7 +107,7 @@ def main(mode): #main loop
         noOneHome = False
         sunlight = False
         desiredRoomTemp = 23
-        currentRoomTemp = dhtDevice.temperature
+        currentRoomTemp = tempSensorRoom.temperature
         outsideTemp = 23
         print("desired room temp is: ", desiredRoomTemp)
         print("current room temp is: ", currentRoomTemp)
