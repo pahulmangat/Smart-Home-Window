@@ -1,6 +1,10 @@
-#import RPi.GPIO as GPIO #GPIO library
+#import libraries
 from datetime import datetime #Date and time library
 import time #time-related function library
+import sys
+import os
+import board
+import adafruit_dht
 
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
