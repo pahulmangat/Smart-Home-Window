@@ -4,14 +4,22 @@ import time #time-related function library
 import sys
 import os
 import board
+import RPi.GPIO as GPIO
 import adafruit_dht
 
 # initialize light sensor
 import TSL2591
 lightSensor = TSL2591.TSL2591()
+
 # Initial the dht device, with data pin connected to:
 tempSensorIn = adafruit_dht.DHT22(board.D4,use_pulseio=False) #inside temp sensor
 tempSensorOut = adafruit_dht.DHT22(board.D5,use_pulseio=False) #outside temp sensor
+
+#initialize servo motor
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
+pwm=GPIO.PWM(17, 50)
+pwm.start(0)
 
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
@@ -19,7 +27,7 @@ windowStatus = "Closed" #Blinds status flag
 def Open_Blinders(): #open blinds function
     global blinderStatus
     if blinderStatus == "Closed":
-        #motor code
+        pwm.ChangeDutyCycle(5) # servo motor
         time.sleep(10)
         blinderStatus = "Open"
         print("Blinds are now", blinderStatus)
@@ -30,7 +38,7 @@ def Close_Blinders(): #close blinds function
     global blinderStatus
     if blinderStatus == "Open":
         print("Closing Blinds...")
-        #motor code
+        pwm.ChangeDutyCycle(5) # servo motor
         time.sleep(10)
         blinderStatus = "Closed"
         print("Blinds are now", blinderStatus)
