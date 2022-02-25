@@ -11,7 +11,7 @@ import adafruit_dht
 import TSL2591
 lightSensor = TSL2591.TSL2591()
 
-# Initial the dht device, with data pin connected to:
+# Initial both temp sesnors
 tempSensorIn = adafruit_dht.DHT22(board.D4,use_pulseio=False) #inside temp sensor
 tempSensorOut = adafruit_dht.DHT22(board.D5,use_pulseio=False) #outside temp sensor
 
@@ -80,6 +80,8 @@ def main(mode): #main loop
             Open_Blinders()
         if userInput == "Close Blinders":
             Close_Blinders()
+        
+        time.sleep(10)
         
     while mode == "Auto": #Auto Mode
         print("Auto")
