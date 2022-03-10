@@ -8,6 +8,18 @@ import RPi.GPIO as GPIO
 import adafruit_dht
 from pyrebase import pyrebase
 
+#initiaize firebse
+config = {"apiKey": "AIzaSyDIx4wG2woFuKsk64nPpu7BnKE9CawnMDo",
+  "authDomain": "smart-windows-app-edc8a.firebaseapp.com",
+  "databaseURL": "https://smart-windows-app-edc8a-default-rtdb.firebaseio.com",
+  "projectId": "smart-windows-app-edc8a",
+  "storageBucket": "smart-windows-app-edc8a.appspot.com",
+  "messagingSenderId": "1035393408535",
+  "appId": "1:1035393408535:web:3a24ebae2282d1d7f40652",
+  "measurementId": "G-CXZQXB2ZGV"}
+firebase = pyrebase.initialize_app(config)
+db = firebase.database() # Get a reference to the auth service
+
 # initialize light sensor
 import TSL2591
 lightSensor = TSL2591.TSL2591()
@@ -161,7 +173,8 @@ def main(mode): #main loop
                 time.sleep(10)
     
 if __name__ == "__main__":
-    Mode = input("Mode: ")
+    mode = db.child("SelectedMode").get()
+    print(mode.key(),": ", mode.val()) 
     #Mode = 1 #device mode flag
     while True:
         main(Mode)
