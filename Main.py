@@ -6,6 +6,7 @@ import os
 import board
 import RPi.GPIO as GPIO
 import adafruit_dht
+from pyrebase import pyrebase
 
 # initialize light sensor
 import TSL2591
