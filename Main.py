@@ -140,7 +140,7 @@ def main(mode): #main loop
             print("night")
             lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
         
-        desiredRoomTemp = 23
+        desiredRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
         currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
         #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
         outsideTemp = 23
