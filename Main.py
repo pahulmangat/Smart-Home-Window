@@ -173,8 +173,7 @@ def main(mode): #main loop
                 time.sleep(10)
     
 if __name__ == "__main__":
-    mode = db.child("SelectedMode").get()
-    print(mode.key(),": ", mode.val()) 
-    #Mode = 1 #device mode flag
+    mode = (db.child("SelectedMode").get()).val() # get selected mode from app
+    print("Mode: ", mode) 
     while True:
-        main(Mode)
+        main(mode)
