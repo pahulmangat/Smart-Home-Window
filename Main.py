@@ -70,7 +70,7 @@ def Close_Window(): #close windows function
 
 def main(mode): #main loop
 
-    while mode == "Manual": #Manual Mode
+    while mode == 3: #Manual Mode
         print("Manual")
         userInput = input("Enter your input: ")
         if userInput == "Open Window":
@@ -84,7 +84,7 @@ def main(mode): #main loop
         
         time.sleep(10)
         
-    while mode == "Auto": #Auto Mode
+    while mode == 2: #Auto Mode
         print("Auto")
         current_time = (datetime.now()).strftime("%H:%M") #get current time
         print("CURRENT TIME:", current_time)
@@ -112,7 +112,7 @@ def main(mode): #main loop
             
         time.sleep(10)
         
-    while mode == "Smart":
+    while mode == 1:
         print("Smart")
         badWeather = True
         noOneHome = False
@@ -161,7 +161,7 @@ def main(mode): #main loop
                 time.sleep(10)
     
 if __name__ == "__main__":
-    #Mode = input("Mode: ")
-    Mode = "Smart" #device mode flag
+    Mode = input("Mode: ")
+    #Mode = 1 #device mode flag
     while True:
         main(Mode)
