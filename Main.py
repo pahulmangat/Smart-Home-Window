@@ -37,24 +37,28 @@ pwm.start(0)
 blinderStatus = "Closed" #Blinders status flag
 windowStatus = "Closed" #Blinds status flag
 
-def Open_Blinders(): #open blinds function
+def Open_Blinders(x): #open blinds function
     global blinderStatus
     if blinderStatus == "Closed":
-        pwm.ChangeDutyCycle(5) # servo motor
-        time.sleep(10)
+        print("Opening Blinds...")
+        pwm.ChangeDutyCycle(4) # servo motor
+        time.sleep(12)
         blinderStatus = "Open"
         print("Blinds are now", blinderStatus)
+        pwm.stop()
     elif blinderStatus == "Open":
         print("Blinds are already", blinderStatus)
         
-def Close_Blinders(): #close blinds function
+def Close_Blinders(x): #close blinds function
     global blinderStatus
     if blinderStatus == "Open":
         print("Closing Blinds...")
-        pwm.ChangeDutyCycle(5) # servo motor
-        time.sleep(10)
+        pwm.start(0)
+        pwm.ChangeDutyCycle(7.5) # servo motor
+        time.sleep(10.5)
         blinderStatus = "Closed"
         print("Blinds are now", blinderStatus)
+        pwm.stop()
     elif blinderStatus == "Closed":
         print("Blinds are already", blinderStatus)
         
@@ -84,15 +88,13 @@ def main(mode): #main loop
 
     while mode == 3: #Manual Mode
         print("Manual")
-        userInput = input("Enter your input: ")
-        if userInput == "Open Window":
-            Open_Window()
-        if userInput == "Close Window":
-            Close_Window()
-        if userInput == "Open Blinds":
-            Open_Blinders()
-        if userInput == "Close Blinders":
-            Close_Blinders()
+        
+        blindsVal = (db.child("Manual").child("blindsVal").get()).val()
+        print("Blinds: ", blindsVal) 
+        windowsVal = (db.child("Manual").child("windowsVal").get()).val()
+        print("Windows: ", windowsVal) 
+        
+        Open_Blinders(blindsVal)
         
         time.sleep(10)
         
@@ -172,8 +174,16 @@ def main(mode): #main loop
                 Close_Blinders()
                 time.sleep(10)
     
+    while mode == 4:
+        print("Test Mode")
+        time.sleep(1)
+        Open_Blinders(5)
+        time.sleep(5)
+        Close_Blinders(5)
+    
 if __name__ == "__main__":
     mode = (db.child("SelectedMode").get()).val() # get selected mode from app
-    print("Mode: ", mode) 
+    mode = 4
+    print("Mode:", mode) 
     while True:
         main(mode)
