@@ -7,8 +7,9 @@ import board
 import RPi.GPIO as GPIO
 import adafruit_dht
 from pyrebase import pyrebase
+from pyfirmata import Arduino, util
 
-#initiaize firebse
+#initiaize firebase
 config = {"apiKey": "AIzaSyDIx4wG2woFuKsk64nPpu7BnKE9CawnMDo",
   "authDomain": "smart-windows-app-edc8a.firebaseapp.com",
   "databaseURL": "https://smart-windows-app-edc8a-default-rtdb.firebaseio.com",
@@ -20,170 +21,213 @@ config = {"apiKey": "AIzaSyDIx4wG2woFuKsk64nPpu7BnKE9CawnMDo",
 firebase = pyrebase.initialize_app(config)
 db = firebase.database() # Get a reference to the auth service
 
-# initialize light sensor
-import TSL2591
-lightSensor = TSL2591.TSL2591()
-
 # Initial both temp sesnors
-tempSensorIn = adafruit_dht.DHT22(board.D4,use_pulseio=False) #inside temp sensor
-tempSensorOut = adafruit_dht.DHT22(board.D5,use_pulseio=False) #outside temp sensor
+tempSensorIn = adafruit_dht.DHT22(board.D21,use_pulseio=False) #inside temp sensor
+tempSensorOut = adafruit_dht.DHT22(board.D12,use_pulseio=False) #outside temp sensor
 
 #initialize servo motor
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.OUT)
 pwm=GPIO.PWM(17, 50)
 pwm.start(0)
+bValPrev = -1
+bVal = 0
 
-blinderStatus = "Closed" #Blinders status flag
-windowStatus = "Closed" #Blinds status flag
+#######initialize lin actuator
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+board = Arduino('/dev/ttyACM0')
+wValPrev = -1
+wVal = 0
 
-def Open_Blinders(x): #open blinds function
-    global blinderStatus
-    if blinderStatus == "Closed":
-        print("Opening Blinds...")
-        pwm.ChangeDutyCycle(4) # servo motor
-        time.sleep(12)
-        blinderStatus = "Open"
-        print("Blinds are now", blinderStatus)
-        pwm.stop()
-    elif blinderStatus == "Open":
-        print("Blinds are already", blinderStatus)
-        
-def Close_Blinders(x): #close blinds function
-    global blinderStatus
-    if blinderStatus == "Open":
-        print("Closing Blinds...")
-        pwm.start(0)
-        pwm.ChangeDutyCycle(7.5) # servo motor
-        time.sleep(10.5)
-        blinderStatus = "Closed"
-        print("Blinds are now", blinderStatus)
-        pwm.stop()
-    elif blinderStatus == "Closed":
-        print("Blinds are already", blinderStatus)
-        
-def Open_Window(): #open windows function
-    global windowStatus
-    if windowStatus == "Closed":
-        print("Opening Blinds...")
-        #motor code
-        time.sleep(10)
-        windowStatus = "Open"
-        print("Windows are now", windowStatus)
-    elif windowStatus == "Open":
-        print("Windows are already", windowStatus)
+def ultraSonicW():
+    TRIG, ECHO = 17, 27 # Window Ultrasonic Pins on Raspi
+    GPIO.setup(TRIG, GPIO.OUT)
+    GPIO.setup(ECHO, GPIO.IN)
+    GPIO.output(TRIG, False)
+    time.sleep(0.2)
+    GPIO.output(TRIG, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG, False)
+    pulse_start = 0
+    pulse_end = 0
+    while GPIO.input(ECHO) == 0:
+        pulse_start = time.time()
+    while GPIO.input(ECHO) == 1:
+        pulse_end = time.time()
+    pulse_duration = pulse_end - pulse_start
+    distance = pulse_duration * 17150
+    distance = round(distance, 2)
+    print("distance:", distance, "cm")
+    return distance
+
+def ultraSonicB():
+    TRIG, ECHO = 23, 24 # Window Ultrasonic Pins on Raspi
+    GPIO.setup(TRIG, GPIO.OUT)
+    GPIO.setup(ECHO, GPIO.IN)
+    GPIO.output(TRIG, False)
+    time.sleep(0.2)
+    GPIO.output(TRIG, True)
+    time.sleep(0.00001)
+    GPIO.output(TRIG, False)
+    pulse_start = 0
+    pulse_end = 0
+    while GPIO.input(ECHO) == 0:
+        pulse_start = time.time()
+    while GPIO.input(ECHO) == 1:
+        pulse_end = time.time()
+    pulse_duration = pulse_end - pulse_start
+    distance = pulse_duration * 17150
+    distance = round(distance, 2)
+    print("distance:", distance, "cm")
+    return distance
+
+def lightSensor():
+    # initialize light sensor
+    import TSL2591
+    lightSensor = TSL2591.TSL2591()
+    if lightSensor.Lux > 100:
+        sunlight = True
+        print('Lux: %d'%lightSensor.Lux)
+        print("day")
+        lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
+    else:
+        sunlight = False
+        print('Lux: %d'%lightSensor.Lux)
+        print("night")
+        lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
+    return sunlight
+
+def operateBlinders(valPrev, val):
+    distInterval = [72.5, 65, 57.5, 50, 42.5, 35, 27.5, 20, 12.5, 9, 7]
+    dist = ultraSonicB()
+    A, B = 6, 7 # Lin Actuator Pins on Arduino
     
-        
-def Close_Window(): #close windows function
-    global windowStatus
-    if windowStatus == "Open":
-        #motor code
-        time.sleep(10)
-        windowStatus = "Closed"
-        print("Windows are now", windowStatus)
-    elif windowStatus == "Closed":
-        print("Windows are already", windowStatus)
-
-def main(mode): #main loop
-
-    while mode == 3: #Manual Mode
-        print("Manual")
-        
-        blindsVal = (db.child("Manual").child("blindsVal").get()).val()
-        print("Blinds: ", blindsVal) 
-        windowsVal = (db.child("Manual").child("windowsVal").get()).val()
-        print("Windows: ", windowsVal) 
-        
-        Open_Blinders(blindsVal)
-        
-        time.sleep(10)
-        
-    while mode == 2: #Auto Mode
-        print("Auto")
-        current_time = (datetime.now()).strftime("%H:%M") #get current time
-        print("CURRENT TIME:", current_time)
-        print("Blinds are currently", blinderStatus)
-        print("Windows are currently", windowStatus)
-        
-        #openWindowTime = input("Enter Open Window Time: ")
-        #closeWindowTime = input("Enter Close Window Time: ")
-        #openBlindsTime = input("Enter Open Blinds Time: ")
-        #closeBlindsTime = input("Enter Close Blinds Time: ")
-        openWindowTime = "08:00"
-        closeWindowTime = "20:00"
-        openBlindsTime = "08:00"
-        closeBlindsTime = "20:00"
-        
-        if (openWindowTime < current_time < closeWindowTime):
-            Open_Window()
-        if (current_time > closeWindowTime or current_time < openWindowTime):
-            Close_Window()
-        
-        if (openBlindsTime < current_time < closeBlindsTime):
-            Open_Blinders()
-        if (current_time > closeBlindsTime or current_time < openBlindsTime):
-            Close_Blinders()
+    for i in range(11):
+        if val == i and dist < (distInterval[i] - 5):
+            board.digital[A].write(1)
+            board.digital[B].write(0)
+        elif val == i and dist > (distInterval[i] + 5):
+            board.digital[A].write(0)
+            board.digital[B].write(1)
+        if val == i and dist > (distInterval[i] - 5) and dist < (distInterval[i] + 5):
+            board.digital[A].write(1)
+            board.digital[B].write(1)
+            valPrev = val
             
-        time.sleep(10)
+    if valPrev == val:
+        return val
+    else: 
+        return -1 # Can't return previous value because if user changes mind and sets to same value actuator nevers stops so return -1
         
-    while mode == 1:
-        print("Smart")
-        badWeather = True
-        noOneHome = False
-        #get light sensor readings
-        if lightSensor.Lux > 100:
-            sunlight = True
-            print('Lux: %d'%lightSensor.Lux)
-            print("day")
-            lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
-        else:
-            sunlight = False
-            print('Lux: %d'%lightSensor.Lux)
-            print("night")
-            lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
-        
-        desiredRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
-        currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
-        #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
-        outsideTemp = 23
-        print("desired room temp is: ", desiredRoomTemp)
-        print("current room temp is: ", currentRoomTemp)
-        
-        if currentRoomTemp > desiredRoomTemp:
-            print("room is hotter")
-            if outsideTemp > desiredRoomTemp:
-                Close_Window()
-                Close_Blinders()
-                time.sleep(10)
-            else:
-                if badWeather == True or noOneHome == True:
-                    Close_Window()
-                    Close_Blinders()
-                    time.sleep(10)
-                else:
-                    Open_Blinders()
-                    Open_Window()
-                    time.sleep(10)
-        else:
-            print("room is colder or at desired temperature")
-            Close_Window()
-            if sunlight == True:
-                Open_Blinders()
-                time.sleep(10)
-            else:
-                Close_Blinders()
-                time.sleep(10)
+def operateWindow(valPrev, val):
+    distInterval = [9.0, 13.28, 17.56, 21.84, 26.12, 30.4, 34.68, 38.96, 43.24, 47.52, 51.5]
+    dist = ultraSonicW()
+    A, B = 8, 9 # Lin Actuator Pins on Arduino
     
-    while mode == 4:
-        print("Test Mode")
-        time.sleep(1)
-        Open_Blinders(5)
-        time.sleep(5)
-        Close_Blinders(5)
-    
+    for i in range(11):
+        if val == i and dist < (distInterval[i] - 0.25):
+            board.digital[A].write(0)
+            board.digital[B].write(1)
+        elif val == i and dist > (distInterval[i] + 0.25):
+            board.digital[A].write(1)
+            board.digital[B].write(0)
+        if val == i and dist > (distInterval[i] - 0.25) and dist < (distInterval[i] + 0.25):
+            board.digital[A].write(1)
+            board.digital[B].write(1)
+            valPrev = val
+            
+    if valPrev == val:
+        return val
+    else: 
+        return -1 # Can't return previous value because if user changes mind and sets to same value actuator nevers stops so return -1
+         
 if __name__ == "__main__":
-    mode = (db.child("SelectedMode").get()).val() # get selected mode from app
-    mode = 4
-    print("Mode:", mode) 
     while True:
-        main(mode)
+        mode = db.child("SelectedMode").get().val() # get selected mode from app
+        
+        if mode == 1:
+            print("Smart", mode)
+            sunlight = lightSensor()
+            print ("sunlight: ", sunlight)
+            sunlight = True
+            desiredRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
+            #currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
+            currentRoomTemp = 23
+            #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
+            outsideTemp = 24
+            print("desired room temp is: ", desiredRoomTemp)
+            print("current room temp is: ", currentRoomTemp)
+            print("outside room temp is: ", outsideTemp)
+            
+            if (currentRoomTemp > (desiredRoomTemp + 1)): #room is hotter than desired
+                if (outsideTemp > (desiredRoomTemp - 1)):
+                    print("yurrrr")
+                    wVal = 0 #close windows
+                    bVal = 10 # close blinds
+                elif (outsideTemp < (desiredRoomTemp - 1)): 
+                    wVal = db.child("Settings").child("autoWindowsLevel").get().val()
+                    bVal = db.child("Settings").child("autoBlindsLevel").get().val()
+            elif (currentRoomTemp < (desiredRoomTemp - 1)): #room is colder than desired
+                wVal = 10 # close window to prevent heat from escaping home
+                if sunlight == True:
+                    bVal = db.child("Settings").child("autoBlindsLevel").get().val() # allow sunlight to heat home
+                else:
+                    bVal = 10 # close blinds
+                    
+        if mode == 2:
+            print("Auto", mode)
+            # Open Times
+            wOpenHour = db.child("Automatic").child("Windows").child("wOpenHour").get().val()
+            wOpenMinute = db.child("Automatic").child("Windows").child("wOpenMinute").get().val()
+            print("wOpenTime: ", wOpenHour,":", wOpenMinute)
+            wOpenTime = wOpenHour * 60 + wOpenMinute
+            # Close Times
+            wCloseHour = db.child("Automatic").child("Windows").child("wCloseHour").get().val()
+            wCloseMinute = db.child("Automatic").child("Windows").child("wCloseMinute").get().val()
+            print("wOpenTime: ", wCloseHour,":", wCloseMinute)
+            wCloseTime = wCloseHour * 60 + wCloseMinute
+            #current
+            cH = datetime.now().hour  # Current Hour as an int
+            cM = datetime.now().minute
+            print("wOpenTime: ", cH,":", cM)
+            currentTime = cH * 60 + cM
+            
+            if wOpenTime < wCloseTime:
+                if wOpenTime <= currentTime < wCloseTime:
+                    print("Open")
+                    wVal = db.child("Settings").child("autoWindowsLevel").get().val()
+                else:
+                    print("Close")
+                    wVal = 10
+            else:
+                if currentTime >= wOpenTime or currentTime <= wCloseTime:
+                    print("Open")
+                    wVal = db.child("Settings").child("autoWindowsLevel").get().val()
+                else:
+                    print("Close")
+                    wVal = 10
+
+        if mode == 3:
+            print("Manual", mode)
+            wVal = db.child("Manual").child("windowsVal").get().val()
+            bVal = db.child("Manual").child("blindsVal").get().val()
+                  
+        if mode == 4:
+            print("Test", mode)
+            
+        badWeather = False
+        noOneHome = False 
+        if (badWeather == True or noOneHome == True):
+            print("closing window and blinds for safety")
+            wVal = 10
+            bVal = 10
+        
+        if wVal != wValPrev:
+            wValPrev = operateWindow(wValPrev, wVal)
+            print("Previous Window Value: ", wValPrev)
+            print("Current Window Value: ", wVal)
+        if bVal != bValPrev:
+            bValPrev = operateBlinders(bValPrev, bVal)
+            print("Previous Blinders Value: ", bValPrev)
+            print("Current Blinders Value: ", bVal)
