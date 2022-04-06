@@ -24,6 +24,12 @@ db = firebase.database() # Get a reference to the auth service
 # Initial both temp sesnors
 tempSensorIn = adafruit_dht.DHT22(board.D21,use_pulseio=False) #inside temp sensor
 tempSensorOut = adafruit_dht.DHT22(board.D12,use_pulseio=False) #outside temp sensor
+currentRoomTemp, outsideTemp = None, None
+
+board = Arduino('/dev/ttyACM0') # set up arduino
+pin = board.get_pin('a:0:i')
+it = util.Iterator(board)
+it.start()
 
 #initialize servo motor
 GPIO.setmode(GPIO.BCM)
@@ -36,7 +42,6 @@ bVal = 0
 #######initialize lin actuator
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-board = Arduino('/dev/ttyACM0')
 wValPrev = -1
 wVal = 0
 
@@ -45,7 +50,7 @@ def ultraSonicW():
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
     GPIO.output(TRIG, False)
-    time.sleep(0.2)
+    #time.sleep(0.2)
     GPIO.output(TRIG, True)
     time.sleep(0.00001)
     GPIO.output(TRIG, False)
@@ -58,7 +63,7 @@ def ultraSonicW():
     pulse_duration = pulse_end - pulse_start
     distance = pulse_duration * 17150
     distance = round(distance, 2)
-    print("distance:", distance, "cm")
+    #print("distance:", distance, "cm")
     return distance
 
 def ultraSonicB():
@@ -66,7 +71,7 @@ def ultraSonicB():
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
     GPIO.output(TRIG, False)
-    time.sleep(0.2)
+    #time.sleep(0.2)
     GPIO.output(TRIG, True)
     time.sleep(0.00001)
     GPIO.output(TRIG, False)
@@ -79,7 +84,7 @@ def ultraSonicB():
     pulse_duration = pulse_end - pulse_start
     distance = pulse_duration * 17150
     distance = round(distance, 2)
-    print("distance:", distance, "cm")
+    #print("distance:", distance, "cm")
     return distance
 
 def lightSensor():
@@ -89,14 +94,28 @@ def lightSensor():
     if lightSensor.Lux > 50:
         sunlight = True
         print('Lux: %d'%lightSensor.Lux)
-        print("Day time")
+        #print("Day time")
         lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
     else:
         sunlight = False
         print('Lux: %d'%lightSensor.Lux)
-        print("Night time")
+        #print("Night time")
         lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
     return sunlight
+
+
+def Rain(): # Rain Sensor
+    analog_value = pin.read()
+    while analog_value is None:
+        analog_value = pin.read()
+    print(analog_value)
+    
+    if analog_value > 0.75:
+        rain = False
+    elif analog_value < 0.75:
+        rain = True
+        
+    return rain
 
 def operateBlinders(valPrev, val):
     distInterval = [74, 65.3, 58.6, 51.9, 45.2, 38.5, 31.8, 25.1, 18.4, 11.7, 5]
@@ -147,16 +166,29 @@ def Geofence():
     cO = db.child("Settings").child("closeOption").get().val()
     
     if cO == False:
-        print("geofence is off")
         geofence = True
     else:
-        print("geo is on")
         location = db.child("Geofence").get().val()
         for k, v in location.items():
             if v is True:
-                print("someone is home")
                 geofence = True
     return geofence
+
+def Temp(crt, ot):
+    dRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
+    
+    try:
+        cRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
+        outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
+    except RuntimeError as error:
+        cRoomTemp = crt
+        outsideTemp = ot
+    
+    print("desired room temp is: ", dRoomTemp)
+    print("current room temp is: ", cRoomTemp)
+    print("outside room temp is: ", outsideTemp)
+    
+    return dRoomTemp, cRoomTemp, outsideTemp
          
 if __name__ == "__main__":
     while True:
@@ -165,14 +197,7 @@ if __name__ == "__main__":
         if mode == 1:
             print("Smart", mode)
             sunlight = lightSensor()
-            desiredRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
-            #currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
-            currentRoomTemp = 23
-            #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
-            outsideTemp = 23
-            print("desired room temp is: ", desiredRoomTemp)
-            print("current room temp is: ", currentRoomTemp)
-            print("outside room temp is: ", outsideTemp)
+            desiredRoomTemp, currentRoomTemp, outsideTemp = Temp(currentRoomTemp, outsideTemp)
             
             if (currentRoomTemp > (desiredRoomTemp + 2)): #room is hotter than desired
                 print("room is hotter")
@@ -181,9 +206,10 @@ if __name__ == "__main__":
                     print("closing window and blinds")
                     wVal = 10 #close windows
                     bVal = 10 # close blinds
-                elif (outsideTemp < (desiredRoomTemp - 2)):
+                elif (outsideTemp < (desiredRoomTemp + 2)):
                     print("outside is colder/desired")
                     print("opening window and blinds")
+                    
                     wVal = db.child("Settings").child("autoWindowsLevel").get().val()
                     bVal = db.child("Settings").child("autoBlindsLevel").get().val()
             elif (currentRoomTemp < (desiredRoomTemp + 2)): #room is colder or at desired
@@ -195,6 +221,13 @@ if __name__ == "__main__":
                 else:
                     print("closing blinds bc no sun")
                     bVal = 10 # close blinds
+            
+            #Rain Overide
+            rain = Rain()
+            print("rain: ", rain)
+            if rain == True:
+                print("closing window bc of rain")
+                wVal = 10 # close windows
                     
         if mode == 2:
             print("Auto", mode)
@@ -264,13 +297,15 @@ if __name__ == "__main__":
             bVal = db.child("Manual").child("blindsVal").get().val()
                   
         if mode == 4:
-            print("Test", mode)
+            while True:
+                print("Test", mode)
+                desiredRoomTemp, currentRoomTemp, outsideTemp = Temp(currentRoomTemp, outsideTemp)
             
-        badWeather = False
+        #Geofence
         geofence = Geofence()
-        print("geofence: ", geofence)
-        if (badWeather == True or geofence == False):
-            print("closing window and blinds for safety")
+        #print("geofence: ", geofence)
+        if geofence == False:
+            #print("closing window and blinds bc no one is home")
             wVal = 10
             bVal = 10
         
