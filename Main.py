@@ -86,31 +86,31 @@ def lightSensor():
     # initialize light sensor
     import TSL2591
     lightSensor = TSL2591.TSL2591()
-    if lightSensor.Lux > 100:
+    if lightSensor.Lux > 50:
         sunlight = True
         print('Lux: %d'%lightSensor.Lux)
-        print("day")
+        print("Day time")
         lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
     else:
         sunlight = False
         print('Lux: %d'%lightSensor.Lux)
-        print("night")
+        print("Night time")
         lightSensor.TSL2591_SET_LuxInterrupt(50, 200)
     return sunlight
 
 def operateBlinders(valPrev, val):
-    distInterval = [72.5, 65, 57.5, 50, 42.5, 35, 27.5, 20, 12.5, 9, 7]
+    distInterval = [74, 65.3, 58.6, 51.9, 45.2, 38.5, 31.8, 25.1, 18.4, 11.7, 5]
     dist = ultraSonicB()
     A, B = 6, 7 # Lin Actuator Pins on Arduino
     
     for i in range(11):
-        if val == i and dist < (distInterval[i] - 5):
+        if val == i and dist < (distInterval[i] - 2):
             board.digital[A].write(1)
             board.digital[B].write(0)
-        elif val == i and dist > (distInterval[i] + 5):
+        elif val == i and dist > (distInterval[i] + 2):
             board.digital[A].write(0)
             board.digital[B].write(1)
-        if val == i and dist > (distInterval[i] - 5) and dist < (distInterval[i] + 5):
+        if val == i and dist > (distInterval[i] - 2) and dist < (distInterval[i] + 2):
             board.digital[A].write(1)
             board.digital[B].write(1)
             valPrev = val
@@ -118,7 +118,7 @@ def operateBlinders(valPrev, val):
     if valPrev == val:
         return val
     else: 
-        return -1 # Can't return previous value because if user changes mind and sets to same value actuator nevers stops so return -1
+        return -1 # Can't return previous value
         
 def operateWindow(valPrev, val):
     distInterval = [9.0, 13.28, 17.56, 21.84, 26.12, 30.4, 34.68, 38.96, 43.24, 47.52, 51.5]
@@ -140,7 +140,23 @@ def operateWindow(valPrev, val):
     if valPrev == val:
         return val
     else: 
-        return -1 # Can't return previous value because if user changes mind and sets to same value actuator nevers stops so return -1
+        return -1 # Can't return previous value
+    
+def Geofence():
+    geofence = False
+    cO = db.child("Settings").child("closeOption").get().val()
+    
+    if cO == False:
+        print("geofence is off")
+        geofence = True
+    else:
+        print("geo is on")
+        location = db.child("Geofence").get().val()
+        for k, v in location.items():
+            if v is True:
+                print("someone is home")
+                geofence = True
+    return geofence
          
 if __name__ == "__main__":
     while True:
@@ -149,64 +165,98 @@ if __name__ == "__main__":
         if mode == 1:
             print("Smart", mode)
             sunlight = lightSensor()
-            print ("sunlight: ", sunlight)
-            sunlight = True
             desiredRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
             #currentRoomTemp = tempSensorIn.temperature # get temp reading from inside temp sensor
             currentRoomTemp = 23
             #outsideTemp = tempSensorOut.temperature # get temp reading from outside temp sensor
-            outsideTemp = 24
+            outsideTemp = 23
             print("desired room temp is: ", desiredRoomTemp)
             print("current room temp is: ", currentRoomTemp)
             print("outside room temp is: ", outsideTemp)
             
-            if (currentRoomTemp > (desiredRoomTemp + 1)): #room is hotter than desired
-                if (outsideTemp > (desiredRoomTemp - 1)):
-                    print("yurrrr")
-                    wVal = 0 #close windows
+            if (currentRoomTemp > (desiredRoomTemp + 2)): #room is hotter than desired
+                print("room is hotter")
+                if (outsideTemp > (desiredRoomTemp + 2)):
+                    print("outside is hotter")
+                    print("closing window and blinds")
+                    wVal = 10 #close windows
                     bVal = 10 # close blinds
-                elif (outsideTemp < (desiredRoomTemp - 1)): 
+                elif (outsideTemp < (desiredRoomTemp - 2)):
+                    print("outside is colder/desired")
+                    print("opening window and blinds")
                     wVal = db.child("Settings").child("autoWindowsLevel").get().val()
                     bVal = db.child("Settings").child("autoBlindsLevel").get().val()
-            elif (currentRoomTemp < (desiredRoomTemp - 1)): #room is colder than desired
+            elif (currentRoomTemp < (desiredRoomTemp + 2)): #room is colder or at desired
                 wVal = 10 # close window to prevent heat from escaping home
+                print("room is colder")
                 if sunlight == True:
+                    print("opening blinds bc sun")
                     bVal = db.child("Settings").child("autoBlindsLevel").get().val() # allow sunlight to heat home
                 else:
+                    print("closing blinds bc no sun")
                     bVal = 10 # close blinds
                     
         if mode == 2:
             print("Auto", mode)
-            # Open Times
+            
+            # Window Open Time
             wOpenHour = db.child("Automatic").child("Windows").child("wOpenHour").get().val()
             wOpenMinute = db.child("Automatic").child("Windows").child("wOpenMinute").get().val()
-            print("wOpenTime: ", wOpenHour,":", wOpenMinute)
+            print("Window Open Time: ", wOpenHour,":", wOpenMinute)
             wOpenTime = wOpenHour * 60 + wOpenMinute
-            # Close Times
+            # Blinds Open Time
+            bOpenHour = db.child("Automatic").child("Blinds").child("bOpenHour").get().val()
+            bOpenMinute = db.child("Automatic").child("Blinds").child("bOpenMinute").get().val()
+            print("Blinds Open Time: ", bOpenHour,":", bOpenMinute)
+            bOpenTime = bOpenHour * 60 + bOpenMinute
+            
+            # Window Close Time
             wCloseHour = db.child("Automatic").child("Windows").child("wCloseHour").get().val()
             wCloseMinute = db.child("Automatic").child("Windows").child("wCloseMinute").get().val()
-            print("wOpenTime: ", wCloseHour,":", wCloseMinute)
+            print("Window Close Time: ", wCloseHour,":", wCloseMinute)
             wCloseTime = wCloseHour * 60 + wCloseMinute
+            # Blinds Close Time
+            bCloseHour = db.child("Automatic").child("Blinds").child("bCloseHour").get().val()
+            bCloseMinute = db.child("Automatic").child("Blinds").child("bCloseMinute").get().val()
+            print("Window Open Time: ", bCloseHour,":", bCloseMinute)
+            bCloseTime = bCloseHour * 60 + bCloseMinute
+            
             #current
             cH = datetime.now().hour  # Current Hour as an int
             cM = datetime.now().minute
-            print("wOpenTime: ", cH,":", cM)
+            print("Current Time: ", cH,":", cM)
             currentTime = cH * 60 + cM
             
+            #Auto window Val
             if wOpenTime < wCloseTime:
                 if wOpenTime <= currentTime < wCloseTime:
-                    print("Open")
+                    print("Open Window")
                     wVal = db.child("Settings").child("autoWindowsLevel").get().val()
                 else:
-                    print("Close")
+                    print("Close Window")
                     wVal = 10
             else:
                 if currentTime >= wOpenTime or currentTime <= wCloseTime:
-                    print("Open")
+                    print("Open Window")
                     wVal = db.child("Settings").child("autoWindowsLevel").get().val()
                 else:
-                    print("Close")
+                    print("Close Window")
                     wVal = 10
+            #Auto Blind Val
+            if bOpenTime < bCloseTime:
+                if bOpenTime <= currentTime < bCloseTime:
+                    print("Open Blinds")
+                    bVal = db.child("Settings").child("autoBlindsLevel").get().val()
+                else:
+                    print("Close Blinds")
+                    bVal = 10
+            else:
+                if currentTime >= bOpenTime or currentTime <= bCloseTime:
+                    print("Open Blinds")
+                    bVal = db.child("Settings").child("autoBlindsLevel").get().val()
+                else:
+                    print("Close Blinds")
+                    bVal = 10
 
         if mode == 3:
             print("Manual", mode)
@@ -217,8 +267,9 @@ if __name__ == "__main__":
             print("Test", mode)
             
         badWeather = False
-        noOneHome = False 
-        if (badWeather == True or noOneHome == True):
+        geofence = Geofence()
+        print("geofence: ", geofence)
+        if (badWeather == True or geofence == False):
             print("closing window and blinds for safety")
             wVal = 10
             bVal = 10
