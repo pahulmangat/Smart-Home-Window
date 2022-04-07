@@ -26,7 +26,8 @@ tempSensorIn = adafruit_dht.DHT22(board.D21,use_pulseio=False) #inside temp sens
 tempSensorOut = adafruit_dht.DHT22(board.D12,use_pulseio=False) #outside temp sensor
 currentRoomTemp, outsideTemp = None, None
 
-board = Arduino('/dev/ttyACM0') # set up arduino
+# set up arduino
+board = Arduino('/dev/ttyACM0') 
 pin = board.get_pin('a:0:i')
 it = util.Iterator(board)
 it.start()
@@ -36,17 +37,19 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.OUT)
 pwm=GPIO.PWM(17, 50)
 pwm.start(0)
+#initialize blinder level values
 bValPrev = -1
 bVal = 0
 
 #######initialize lin actuator
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
+#initialize window level values
 wValPrev = -1
 wVal = 0
 
-def ultraSonicW():
-    TRIG, ECHO = 17, 27 # Window Ultrasonic Pins on Raspi
+def ultraSonicW(): # Window Ultrasonic function
+    TRIG, ECHO = 17, 27 
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
     GPIO.output(TRIG, False)
@@ -66,8 +69,8 @@ def ultraSonicW():
     #print("distance:", distance, "cm")
     return distance
 
-def ultraSonicB():
-    TRIG, ECHO = 23, 24 # Window Ultrasonic Pins on Raspi
+def ultraSonicB():  # Blind Ultrasonic function
+    TRIG, ECHO = 23, 24
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
     GPIO.output(TRIG, False)
@@ -87,11 +90,12 @@ def ultraSonicB():
     #print("distance:", distance, "cm")
     return distance
 
-def lightSensor():
+def lightSensor(): # light sensor measurement function
     # initialize light sensor
     import TSL2591
     lightSensor = TSL2591.TSL2591()
-    if lightSensor.Lux > 50:
+    T = 50 # threshold value
+    if lightSensor.Lux > T:
         sunlight = True
         print('Lux: %d'%lightSensor.Lux)
         #print("Day time")
@@ -104,20 +108,20 @@ def lightSensor():
     return sunlight
 
 
-def Rain(): # Rain Sensor
+def Rain(): # Rain Sensor function
     analog_value = pin.read()
     while analog_value is None:
         analog_value = pin.read()
-    print(analog_value)
+    T = 0.75 # Threshold value
     
-    if analog_value > 0.75:
+    if analog_value > T:
         rain = False
-    elif analog_value < 0.75:
+    elif analog_value < T:
         rain = True
         
     return rain
 
-def operateBlinders(valPrev, val):
+def operateBlinders(valPrev, val): # operate Blinders Function
     distInterval = [74, 65.3, 58.6, 51.9, 45.2, 38.5, 31.8, 25.1, 18.4, 11.7, 5]
     dist = ultraSonicB()
     A, B = 6, 7 # Lin Actuator Pins on Arduino
@@ -139,7 +143,7 @@ def operateBlinders(valPrev, val):
     else: 
         return -1 # Can't return previous value
         
-def operateWindow(valPrev, val):
+def operateWindow(valPrev, val): # operate window function
     distInterval = [9.0, 13.28, 17.56, 21.84, 26.12, 30.4, 34.68, 38.96, 43.24, 47.52, 51.5]
     dist = ultraSonicW()
     A, B = 8, 9 # Lin Actuator Pins on Arduino
