@@ -24,7 +24,7 @@ db = firebase.database() # Get a reference to the auth service
 # Initial both temp sesnors
 tempSensorIn = adafruit_dht.DHT22(board.D21,use_pulseio=False) #inside temp sensor
 tempSensorOut = adafruit_dht.DHT22(board.D12,use_pulseio=False) #outside temp sensor
-currentRoomTemp, outsideTemp = None, None
+currentRoomTemp, outsideTemp = None, None #initialize temp variables
 
 # set up arduino
 board = Arduino('/dev/ttyACM0') 
@@ -48,7 +48,7 @@ GPIO.setwarnings(False)
 wValPrev = -1
 wVal = 0
 
-def ultraSonicW(): # Window Ultrasonic function
+def ultrasonicW(): # Window Ultrasonic function
     TRIG, ECHO = 17, 27 
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
@@ -69,7 +69,7 @@ def ultraSonicW(): # Window Ultrasonic function
     #print("distance:", distance, "cm")
     return distance
 
-def ultraSonicB():  # Blind Ultrasonic function
+def ultrasonicB():  # Blind Ultrasonic function
     TRIG, ECHO = 23, 24
     GPIO.setup(TRIG, GPIO.OUT)
     GPIO.setup(ECHO, GPIO.IN)
@@ -95,6 +95,7 @@ def lightSensor(): # light sensor measurement function
     import TSL2591
     lightSensor = TSL2591.TSL2591()
     T = 50 # threshold value
+    
     if lightSensor.Lux > T:
         sunlight = True
         print('Lux: %d'%lightSensor.Lux)
@@ -167,18 +168,18 @@ def operateWindow(valPrev, val): # operate window function
     
 def Geofence():
     geofence = False
-    cO = db.child("Settings").child("closeOption").get().val()
+    cO = db.child("Settings").child("closeOption").get().val() #check if geofence is enabled
     
     if cO == False:
         geofence = True
     else:
         location = db.child("Geofence").get().val()
-        for k, v in location.items():
+        for k, v in location.items(): #iterate through every user
             if v is True:
                 geofence = True
     return geofence
 
-def Temp(crt, ot):
+def Temp(crt, ot): #retreive temp valies
     dRoomTemp = (db.child("Smart").child("temp").get()).val() # get desired room temp from app
     
     try:
@@ -187,10 +188,6 @@ def Temp(crt, ot):
     except RuntimeError as error:
         cRoomTemp = crt
         outsideTemp = ot
-    
-    print("desired room temp is: ", dRoomTemp)
-    print("current room temp is: ", cRoomTemp)
-    print("outside room temp is: ", outsideTemp)
     
     return dRoomTemp, cRoomTemp, outsideTemp
          
@@ -299,25 +296,19 @@ if __name__ == "__main__":
             print("Manual", mode)
             wVal = db.child("Manual").child("windowsVal").get().val()
             bVal = db.child("Manual").child("blindsVal").get().val()
-                  
-        if mode == 4:
-            while True:
-                print("Test", mode)
-                desiredRoomTemp, currentRoomTemp, outsideTemp = Temp(currentRoomTemp, outsideTemp)
             
-        #Geofence
+        #Geofence overide
         geofence = Geofence()
-        #print("geofence: ", geofence)
         if geofence == False:
             #print("closing window and blinds bc no one is home")
             wVal = 10
             bVal = 10
         
-        if wVal != wValPrev:
+        if wVal != wValPrev: #adjust window if needed
             wValPrev = operateWindow(wValPrev, wVal)
             print("Previous Window Value: ", wValPrev)
             print("Current Window Value: ", wVal)
-        if bVal != bValPrev:
+        if bVal != bValPrev: #adjust blinds if needed
             bValPrev = operateBlinders(bValPrev, bVal)
             print("Previous Blinders Value: ", bValPrev)
             print("Current Blinders Value: ", bVal)
